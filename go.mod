@@ -1,6 +1,6 @@
 module johnbakhmat.tech/asciifier
 
-go 1.21.6
+go 1.22
 
 require (
 	github.com/crazy3lf/colorconv v1.2.0
