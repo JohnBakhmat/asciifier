@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/png"
@@ -14,18 +15,24 @@ import (
 )
 
 func main() {
+	err := run()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func run() error {
 	char_greyscale := []rune(" .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$")
 
 	if os.Args[1] == "" {
-		log.Fatal("Provide image path")
+		return errors.New("Provide image path")
 	}
 
 	if os.Args[2] == "" {
-		log.Fatal("Provide output path")
+		return errors.New("Provide output path")
 	}
 	image, err := readImage(os.Args[1])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	new_size := uint(math.Pow(2, 8))
@@ -39,10 +46,10 @@ func main() {
 	width, height := bounds.Dx(), bounds.Dy()
 
 	char_grid := make([][]rune, height)
-	luminance_grid := make([][]int8, height)
+	luminance_grid := make([][]int, height)
 
 	for i := range luminance_grid {
-		luminance_grid[i] = make([]int8, width)
+		luminance_grid[i] = make([]int, width)
 		char_grid[i] = make([]rune, width)
 		for j := range luminance_grid[i] {
 			luminance_grid[i][j] = 0
@@ -57,14 +64,10 @@ func main() {
 			_, _, l := colorconv.ColorToHSL(image.At(x, y))
 			l_int := int(l * 100)
 
-			if minL > l_int {
-				minL = l_int
-			}
-			if maxL < l_int {
-				maxL = l_int
-			}
+			minL = min(minL, l_int)
+			maxL = max(maxL, l_int)
 
-			luminance_grid[y][x] = int8(l_int)
+			luminance_grid[y][x] = l_int
 		}
 	}
 
@@ -90,12 +93,14 @@ func main() {
 
 	outFile, err := os.OpenFile(os.Args[2], os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	for _, row := range char_grid {
 		outFile.WriteString(fmt.Sprintln(string(row)))
 	}
+
+	return nil
 }
 
 func readImage(path string) (image.Image, error) {
